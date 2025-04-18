@@ -84,18 +84,22 @@ jobs:
     steps:
     - name: Check out repository code
       uses: actions/checkout@v3
+
     - name: Install Snyk CLI
       run: npm install -g snyk
+
     - name: Run Snyk Code Scan And Check Snyk Scan Results
       uses: snyk/actions/iac@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
         args: "--report --severity-threshold=high --scan=resource-changes"
+
     - name: Run Snyk Code Test Scan And Check Snyk Scan Results
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: snyk code test
+
     - name: Run Snyk to check for vulnerabilities
       uses: snyk/actions/node@master
       env:
@@ -113,6 +117,9 @@ jobs:
       run:
         working-directory: flask-s3-service
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -141,6 +148,9 @@ jobs:
       run:
         working-directory: flask-sqs-service
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
