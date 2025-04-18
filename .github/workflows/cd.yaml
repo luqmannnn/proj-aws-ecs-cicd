@@ -95,7 +95,7 @@ jobs:
           docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} .
           docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_SQS_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
           docker build -t ${{ env.APP_NAME }}-sqs:latest .
-          docker tag ${{ env.APP_NAME }}-sqs:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_SQS_REPO }}:sqs-latest
+          docker tag ${{ env.APP_NAME }}-sqs:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_SQS_REPO }}:latest
 
       - name: Docker publish to ECR
         run: |
