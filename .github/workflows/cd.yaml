@@ -1,0 +1,111 @@
+name: Create AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  APP_NAME: proj-aws-ecs-cicd
+  ECR_REPO: proj-aws-ecs-cicd-ecr-repo
+
+jobs:
+  get-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      LATEST_TAG: ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch All Tags
+        run: git fetch --tags
+
+      - name: Get Latest Tag
+        id: get_latest_tag
+        run: | 
+          echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
+          echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)"
+
+      - name: Output Latest Tag
+        run: echo "The latest tag is ${{ steps.get_latest_tag.outputs.LATEST_TAG }}"
+
+  docker-s3-checks:
+    needs: [get-tag]
+    name: S3 docker build
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ job.status }}
+    defaults:
+      run:
+        working-directory: flask-s3-service
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ vars.ECR_ENDPOINT }}
+
+      - name: Docker build and tag
+        run: |
+          docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} .
+          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+          docker build -t ${{ env.APP_NAME }}-s3:latest .
+          docker tag ${{ env.APP_NAME }}-s3:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-latest
+
+      - name: Docker publish to ECR
+        run: |
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-latest
+        
+
+  docker-sqs-checks:
+    needs: [get-tag]
+    name: SQS docker build
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ job.status }}
+    defaults:
+      run:
+        working-directory: flask-sqs-service
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ vars.ECR_ENDPOINT }}
+
+      - name: Docker build and tag
+        run: |
+          docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} .
+          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+          docker build -t ${{ env.APP_NAME }}-sqs:latest .
+          docker tag ${{ env.APP_NAME }}-sqs:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:sqs-latest
+
+      - name: Docker publish to ECR
+        run: |
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:sqs-latest
+
+  # create-ecs:
+  #   needs: [docker-s3-checks, docker-sqs-checks]

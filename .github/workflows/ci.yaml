@@ -4,10 +4,7 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
-
+      
 env:
   APP_NAME: proj-aws-ecs-cicd
   ECR_REPO: proj-aws-ecs-cicd-ecr-repo
