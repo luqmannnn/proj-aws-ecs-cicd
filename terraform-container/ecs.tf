@@ -57,7 +57,7 @@ module "ecs" {
       assign_public_ip                   = true
       deployment_minimum_healthy_percent = 100
       subnet_ids                         = flatten(data.aws_subnets.existing_subnets.ids)
-      security_group_ids                 = [data.aws_security_group.s3_sg.ids]
+      security_group_ids                 = [data.aws_security_group.s3_sg.id]
       create_tasks_iam_role              = false
       tasks_iam_role_arn                 = module.s3_service_task_role.iam_role_arn
     }
@@ -90,7 +90,7 @@ module "ecs" {
       assign_public_ip                   = true
       deployment_minimum_healthy_percent = 100
       subnet_ids                         = flatten(data.aws_subnets.existing_subnets.ids)
-      security_group_ids                 = [data.aws_security_group.sqs_sg.ids]
+      security_group_ids                 = [data.aws_security_group.sqs_sg.id]
       create_tasks_iam_role              = false
       tasks_iam_role_arn                 = module.sqs_service_task_role.iam_role_arn
     }
