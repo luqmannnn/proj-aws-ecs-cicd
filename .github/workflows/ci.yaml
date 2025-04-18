@@ -91,7 +91,7 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        args: "--report --severity-threshold=high,critical --scan=resource-changes"
+        args: "--report --severity-threshold=high --scan=resource-changes"
     - name: Run Snyk Code Test Scan And Check Snyk Scan Results
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -121,7 +121,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Login to ECR
-        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
 
       - name: Docker build and tag
         run: |
@@ -149,7 +149,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Login to ECR
-        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
 
       - name: Docker build and tag
         run: |
