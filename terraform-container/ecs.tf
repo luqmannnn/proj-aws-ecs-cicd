@@ -118,13 +118,13 @@ data "aws_subnets" "existing_subnets" {
 data "aws_security_group" "sqs_sg" {
   filter {
     name = "tag:Name"
-    values = "${local.usage_name}-sqs-ecs-sg"
+    values = ["${local.usage_name}-sqs-ecs-sg"]
   }
 }
 
 data "aws_security_group" "s3_sg" {
   filter {
     name = "tag:Name"
-    values = "${local.usage_name}-s3-ecs-sg"
+    values = ["${local.usage_name}-s3-ecs-sg"]
   }
 }
