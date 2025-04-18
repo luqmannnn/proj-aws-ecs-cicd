@@ -6,14 +6,6 @@ variable "subnet_name_prefix" {
   default = "proj-aws-ecs-cicd-vpc-tf-public-*"
 }
 
-resource "aws_s3_bucket" "s3_service_bucket" {
-  bucket = "jaz-s3-service-bkt"
-}
-
-resource "aws_sqs_queue" "sqs_service_queue" {
-  name = "jaz-sqs-service-queue"
-}
-
 module "ecs" {
   source  = "terraform-aws-modules/ecs/aws"
   version = "~> 5.9.0"
@@ -97,8 +89,12 @@ module "ecs" {
   }
 }
 
-data "aws_ecr_repository" "ecr" {
-  name = "${local.usage_name}-ecr-repo"
+data "aws_ecr_repository" "s3_ecr" {
+  name = "${local.usage_name}-s3-ecr"
+}
+
+data "aws_ecr_repository" "sqs_ecr" {
+  name = "${local.usage_name}-sqs-ecr"
 }
 
 data "aws_vpc" "existing_vpc" {
