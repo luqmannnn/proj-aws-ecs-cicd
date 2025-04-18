@@ -77,7 +77,6 @@ jobs:
   snyk-checks:
     name: Basic Snyk checks
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: initial-checks
     outputs:
       status: ${{ job.status }}
@@ -89,6 +88,7 @@ jobs:
       run: npm install -g snyk
 
     - name: Run Snyk Code Scan And Check Snyk Scan Results
+      continue-on-error: true
       uses: snyk/actions/iac@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -96,11 +96,13 @@ jobs:
         args: "--report --severity-threshold=high --scan=resource-changes"
 
     - name: Run Snyk Code Test Scan And Check Snyk Scan Results
+      continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: snyk code test
 
     - name: Run Snyk to check for vulnerabilities
+      continue-on-error: true
       uses: snyk/actions/node@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -132,11 +134,11 @@ jobs:
 
       - name: Docker build and tag
         run: |
-          docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} .
-          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+          docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} .
+          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
 
       - name: Docker publish to ECR
-        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
 
   docker-sqs-checks:
     needs: [initial-checks, get-tag]
@@ -163,11 +165,11 @@ jobs:
 
       - name: Docker build and tag
         run: |
-          docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} .
-          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+          docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} .
+          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
 
       - name: Docker publish to ECR
-        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
 
   summary:
     needs: [tf-checks, snyk-checks, docker-s3-checks, docker-sqs-checks] 
