@@ -1,0 +1,184 @@
+name: CI Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+env:
+  APP_NAME: proj-aws-ecs-cicd
+  ECR_REPO: proj-aws-ecs-cicd-ecr-repo
+
+jobs:
+  initial-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Getting initiator name
+      run: echo "Workflow initiated by ${{ github.actor }} from branch ${{ github.ref_name }}"
+
+  get-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      LATEST_TAG: ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch All Tags
+        run: git fetch --tags
+
+      - name: Get Latest Tag
+        id: get_latest_tag
+        run: | 
+          echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
+          echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)"
+
+      - name: Output Latest Tag
+        run: echo "The latest tag is ${{ steps.get_latest_tag.outputs.LATEST_TAG }}"
+
+  tf-checks:
+    name: Basic TF checks
+    runs-on: ubuntu-latest
+    needs: initial-checks
+    outputs:
+      status: ${{ job.status }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform fmt
+      id: fmt
+      run: terraform fmt -check
+
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
+
+    - uses: terraform-linters/setup-tflint@v3
+      with:
+        tflint_version: latest
+    
+    - name: Show version
+      run: tflint --version
+
+    - name: Init TFLint
+      run: tflint --init
+
+    - name: Run TFLint
+      run: tflint -f compact
+
+  snyk-checks:
+    name: Basic Snyk checks
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    needs: initial-checks
+    outputs:
+      status: ${{ job.status }}
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v3
+    - name: Install Snyk CLI
+      run: npm install -g snyk
+    - name: Run Snyk Code Scan And Check Snyk Scan Results
+      uses: snyk/actions/iac@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: "--report --severity-threshold=high,critical --scan=resource-changes"
+    - name: Run Snyk Code Test Scan And Check Snyk Scan Results
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: snyk code test
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  docker-s3-checks:
+    needs: [initial-checks, get-tag]
+    name: S3 docker checks
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ job.status }}
+    defaults:
+      run:
+        working-directory: flask-s3-service
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
+
+      - name: Docker build and tag
+        run: |
+          docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} .
+          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+
+      - name: Docker publish to ECR
+        run: docker push ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+
+  docker-sqs-checks:
+    needs: [initial-checks, get-tag]
+    name: SQS docker checks
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ job.status }}
+    defaults:
+      run:
+        working-directory: flask-sqs-service
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
+
+      - name: Docker build and tag
+        run: |
+          docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} .
+          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+
+      - name: Docker publish to ECR
+        run: docker push ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+
+  summary:
+    needs: [tf-checks, snyk-checks, docker-s3-checks, docker-sqs-checks] 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Adding markdown
+        run: |
+          TF_STATUS=${{ needs.tf-checks.outputs.status }}
+          SNYK_STATUS=${{ needs.snyk-checks.outputs.status }}
+          D_S3_STATUS=${{ needs.docker-s3-checks.outputs.status }}
+          D_SQS_STATUS=${{ needs.docker-sqs-checks.outputs.status }}
+
+          echo '## 🚀 Preparing Build Summary 🚀' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+
+          echo "| Job Name        | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| tf-check       | $TF_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| snyk-check     | $SNYK_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| docker-s3-check     | $D_S3_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| docker-sqs-check     | $D_SQS_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+
+          echo '## Job ran by: ${{ github.actor }}' >> $GITHUB_STEP_SUMMARY
