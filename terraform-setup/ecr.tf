@@ -1,40 +1,17 @@
-module "ecr" {
-  source = "terraform-aws-modules/ecr/aws"
-
-  repository_name = "${local.usage_name}-ecr-repo"
-
-  repository_lifecycle_policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1,
-        description  = "Keep last 30 images",
-        selection = {
-          tagStatus     = "tagged",
-          tagPrefixList = ["v"],
-          countType     = "imageCountMoreThan",
-          countNumber   = 30
-        },
-        action = {
-          type = "expire"
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Terraform   = "true"
-    Environment = "prod"
-  }
+resource "aws_ecr_repository" "s3_ecr" {
+  name         = "${local.usage_name}-s3-ecr"
+  force_delete = true
 }
 
-output "repository_url" {
-  value = module.ecr.repository_url
+resource "aws_ecr_repository" "sqs_ecr" {
+  name         = "${local.usage_name}-sqs-ecr"
+  force_delete = true
 }
 
-output "repository_arn" {
-  value = module.ecr.repository_arn
+output "s3_ecr_url" {
+  value = aws_ecr_repository.s3_ecr.repository_url
 }
 
-output "repository_name" {
-  value = module.ecr.repository_name
+output "sqs_ecr_url" {
+  value = aws_ecr_repository.sqs_ecr.repository_url
 }

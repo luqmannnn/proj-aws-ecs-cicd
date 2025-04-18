@@ -32,3 +32,43 @@ output "vpc_priv_subnet" {
 output "vpc_pub_subnet" {
   value = module.vpc.public_subnets
 }
+
+module "s3_service_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.1.0"
+
+  name        = "${local.usage_name}-s3-ecs-sg"
+  description = "Security group for s3 service"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_with_cidr_blocks = [
+    {
+      from_port   = 5001
+      to_port     = 5001
+      protocol    = "tcp"
+      description = "S3 Service Inbound"
+      cidr_blocks = "0.0.0.0/0"
+    },
+  ]
+  egress_rules = ["all-all"]
+}
+
+module "sqs_service_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.1.0"
+
+  name        = "${local.usage_name}-sqs-ecs-sg"
+  description = "Security group for sqs service"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_with_cidr_blocks = [
+    {
+      from_port   = 5002
+      to_port     = 5002
+      protocol    = "tcp"
+      description = "SQS Service Inbound"
+      cidr_blocks = "0.0.0.0/0"
+    },
+  ]
+  egress_rules = ["all-all"]
+}
