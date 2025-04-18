@@ -32,7 +32,7 @@ module "ecs" {
           cpu       = 512
           memory    = 1024
           essential = true
-          image     = "${data.aws_ecr_repository.ecr.repository_url}/${local.usage_name}-s3-svc:latest"
+          image     = "${data.aws_ecr_repository.ecr.repository_url}/${local.usage_name}-ecr-repo:s3-latest"
 
           port_mappings = [
             {
@@ -56,7 +56,7 @@ module "ecs" {
           cpu       = 512
           memory    = 1024
           essential = true
-          image     = "${data.aws_ecr_repository.ecr.repository_url}/${local.usage_name}-sqs-svc:latest"
+          image     = "${data.aws_ecr_repository.ecr.repository_url}/${local.usage_name}-ecr-repo:sqs-latest"
 
           port_mappings = [
             {
