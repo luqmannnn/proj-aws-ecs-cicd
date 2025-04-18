@@ -100,7 +100,7 @@ jobs:
       - name: Docker publish to ECR
         run: |
           docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_SQS_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
-          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_SQS_REPO }}:sqs-latest
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_SQS_REPO }}:latest
 
   create-ecs:
     needs: [docker-s3-checks, docker-sqs-checks]
