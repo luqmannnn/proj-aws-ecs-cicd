@@ -27,8 +27,8 @@ module "ecs" {
       cpu    = 1024
       memory = 4096
 
-      container-definitions = {
-        s3-service = {
+      container-definitions = jsonencode([
+        {
           cpu       = 512
           memory    = 1024
           essential = true
@@ -42,7 +42,7 @@ module "ecs" {
             }
           ]
         }
-      }
+      ])
     }
 
     sqs-service = {
@@ -51,8 +51,8 @@ module "ecs" {
       cpu    = 1024
       memory = 4096
 
-      container-definitions = {
-        sqs-service = {
+      container-definitions = jsonencode([
+        {
           cpu       = 512
           memory    = 1024
           essential = true
@@ -66,7 +66,7 @@ module "ecs" {
             }
           ]
         }
-      }
+      ])
     }
 
   }
