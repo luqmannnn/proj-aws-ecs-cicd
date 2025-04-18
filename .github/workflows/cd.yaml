@@ -62,7 +62,8 @@ jobs:
 
       - name: Docker publish to ECR
         run: |
-          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-${{ github.run_number }}
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-latest
         
 
   docker-sqs-checks:
@@ -98,6 +99,7 @@ jobs:
       - name: Docker publish to ECR
         run: |
           docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:sqs-latest
 
   create-ecs:
     needs: [docker-s3-checks, docker-sqs-checks]
