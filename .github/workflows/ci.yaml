@@ -121,15 +121,15 @@ jobs:
           aws-region: us-east-1
 
       - name: Login to ECR
-        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ vars.ECR_ENDPOINT }}
 
       - name: Docker build and tag
         run: |
           docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} .
-          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
 
       - name: Docker publish to ECR
-        run: docker push ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
 
   docker-sqs-checks:
     needs: [initial-checks, get-tag]
@@ -149,15 +149,15 @@ jobs:
           aws-region: us-east-1
 
       - name: Login to ECR
-        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_ENDPOINT }}
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ vars.ECR_ENDPOINT }}
 
       - name: Docker build and tag
         run: |
           docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} .
-          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
 
       - name: Docker publish to ECR
-        run: docker push ${{ secrets.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
+        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}.${{ github.run_number }}
 
   summary:
     needs: [tf-checks, snyk-checks, docker-s3-checks, docker-sqs-checks] 
