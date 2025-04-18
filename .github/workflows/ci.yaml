@@ -122,6 +122,9 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -136,9 +139,16 @@ jobs:
         run: |
           docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} .
           docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+          docker tag ${{ env.APP_NAME }}-s3:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-latest
 
-      - name: Docker publish to ECR
-        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+      - name: Docker scan
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk container test ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+
+      # - name: Docker publish to ECR
+      #   run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
 
   docker-sqs-checks:
     needs: [initial-checks, get-tag]
@@ -152,6 +162,9 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
         
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -167,9 +180,16 @@ jobs:
         run: |
           docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} .
           docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+          docker tag ${{ env.APP_NAME }}-sqs:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:sqs-latest
 
-      - name: Docker publish to ECR
-        run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+      - name: Docker scan
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk container test ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+
+      # - name: Docker publish to ECR
+      #   run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
 
   summary:
     needs: [tf-checks, snyk-checks, docker-s3-checks, docker-sqs-checks] 
