@@ -57,10 +57,12 @@ jobs:
         run: |
           docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} .
           docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+          docker build -t ${{ env.APP_NAME }}-s3:s3-latest .
+          docker tag ${{ env.APP_NAME }}-s3:s3-latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-latest
 
       - name: Docker publish to ECR
         run: |
-          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+          docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-${{ github.run_number }}
         
 
   docker-sqs-checks:
@@ -90,6 +92,8 @@ jobs:
         run: |
           docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} .
           docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+          docker build -t ${{ env.APP_NAME }}-sqs:sqs-latest .
+          docker tag ${{ env.APP_NAME }}-sqs:sqs-latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:sqs-latest
 
       - name: Docker publish to ECR
         run: |
