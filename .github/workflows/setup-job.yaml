@@ -1,9 +1,6 @@
 name: Set Up VPC and ECR
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       action:
