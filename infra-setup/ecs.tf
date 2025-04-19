@@ -33,7 +33,7 @@ module "ecs" {
             },
             {
               name  = "BUCKET_NAME"
-              value = "${aws_s3_bucket.s3_service_bucket.bucket}"
+              value = "proj-aws-ecs-cicd-s3-svc-bucket"
             }
           ]
         }
@@ -66,7 +66,7 @@ module "ecs" {
             },
             {
               name  = "QUEUE_URL"
-              value = "${aws_sqs_queue.sqs_service_queue.url}"
+              value = "proj-aws-ecs-cicd-sqs-svc-queue"
             }
           ]
         }
