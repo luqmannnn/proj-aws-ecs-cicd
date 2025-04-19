@@ -73,7 +73,7 @@ jobs:
         fi
 
   docker-s3-create:
-    needs: [get-tag]
+    needs: [get-tag, ecr-job]
     if: ${{ github.action }} == "create"
     name: S3 docker build
     runs-on: ubuntu-latest
@@ -106,7 +106,7 @@ jobs:
           docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_S3_REPO }}:latest
 
   docker-sqs-create:
-    needs: [get-tag]
+    needs: [get-tag, ecr-job]
     if: ${{ github.action }} == "create"
     name: SQS docker build
     runs-on: ubuntu-latest
