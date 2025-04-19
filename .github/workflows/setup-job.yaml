@@ -37,6 +37,41 @@ jobs:
       - name: Output Latest Tag
         run: echo "The latest tag is ${{ steps.get_latest_tag.outputs.LATEST_TAG }}"
 
+  ecr-job:
+    runs-on: ubuntu-latest
+    needs: [get-tag]
+    name: "Running ${{ inputs.action }} - ECR"
+    defaults:
+      run:
+        working-directory: ecr-setup
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Terraform init
+      run: terraform init
+
+    - name: Terraform plan
+      run: terraform plan
+
+    - name: Terraform ${{ inputs.action }}
+      run: |
+        if [ "${{ inputs.action }}" = "create" ]; then
+          terraform apply --auto-approve
+        elif [ "${{ inputs.action }}" = "destroy" ]; then
+          terraform destroy --auto-approve
+        fi
+
   docker-s3-create:
     needs: [get-tag]
     if: ${{ github.action }} == "create"
@@ -106,10 +141,10 @@ jobs:
   run-job:
     runs-on: ubuntu-latest
     needs: [docker-sqs-create,docker-s3-create,get-tag]
-    name: "Running ${{ inputs.action }} - VPC and ECR"
+    name: "Running ${{ inputs.action }} - VPC and ECS"
     defaults:
       run:
-        working-directory: terraform-setup
+        working-directory: infra-setup
 
     steps:
     - uses: actions/checkout@v4
