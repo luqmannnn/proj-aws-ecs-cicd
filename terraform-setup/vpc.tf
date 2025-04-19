@@ -43,14 +43,18 @@ module "s3_service_sg" {
 
   ingress_with_cidr_blocks = [
     {
-      from_port   = 5001
-      to_port     = 5001
+      from_port   = 0
+      to_port     = 0
       protocol    = "tcp"
       description = "S3 Service Inbound"
       cidr_blocks = "0.0.0.0/0"
     },
   ]
   egress_rules = ["all-all"]
+}
+
+output "s3_svc_id" {
+  value = module.s3_service_sg.security_group_id
 }
 
 module "sqs_service_sg" {
@@ -63,12 +67,16 @@ module "sqs_service_sg" {
 
   ingress_with_cidr_blocks = [
     {
-      from_port   = 5002
-      to_port     = 5002
+      from_port   = 0
+      to_port     = 0
       protocol    = "tcp"
       description = "SQS Service Inbound"
       cidr_blocks = "0.0.0.0/0"
     },
   ]
   egress_rules = ["all-all"]
+}
+
+output "sqs_svc_id" {
+  value = module.sqs_service_sg.security_group_id
 }

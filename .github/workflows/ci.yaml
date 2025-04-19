@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      
+
 env:
   APP_NAME: proj-aws-ecs-cicd
   ECR_REPO: proj-aws-ecs-cicd-ecr-repo
@@ -134,19 +134,13 @@ jobs:
 
       - name: Docker build and tag
         run: |
-          docker build -t ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} .
-          docker tag ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
           docker build -t ${{ env.APP_NAME }}-s3:latest .
-          docker tag ${{ env.APP_NAME }}-s3:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:s3-latest
 
       - name: Docker scan
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk container test ${{ env.APP_NAME }}-s3:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
-
-      # - name: Docker publish to ECR
-      #   run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-s3-${{ github.run_number }}
+        run: snyk container test ${{ env.APP_NAME }}-s3:latest
 
   docker-sqs-checks:
     needs: [initial-checks, get-tag]
@@ -176,19 +170,13 @@ jobs:
 
       - name: Docker build and tag
         run: |
-          docker build -t ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} .
-          docker tag ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }} ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
           docker build -t ${{ env.APP_NAME }}-sqs:latest .
-          docker tag ${{ env.APP_NAME }}-sqs:latest ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:sqs-latest
 
       - name: Docker scan
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk container test ${{ env.APP_NAME }}-sqs:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
-
-      # - name: Docker publish to ECR
-      #   run: docker push ${{ vars.ECR_ENDPOINT }}/${{ env.ECR_REPO }}:${{ needs.get-tag.outputs.LATEST_TAG }}-sqs-${{ github.run_number }}
+        run: snyk container test ${{ env.APP_NAME }}-sqs:latest
 
   summary:
     needs: [tf-checks, snyk-checks, docker-s3-checks, docker-sqs-checks] 
